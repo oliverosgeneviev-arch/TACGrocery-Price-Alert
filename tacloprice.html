@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>TacloPrice — Tacloban Grocery Price Tracker</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e18;--surface:#1a1a2e;--surface2:#252540;--surface3:#2e2e50;
+  --accent:#00c896;--adim:rgba(0,200,150,.12);
+  --text:#f0f0ff;--text2:#9090b0;--text3:#55556a;
+  --border:rgba(255,255,255,.07);--gold:#ffd166;--red:#ff6b6b;
+  --nav-h:68px;--r:16px;--rs:10px;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+#app{height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+#content{flex:1;overflow-y:auto;padding-bottom:var(--nav-h);scroll-behavior:smooth}
+#content::-webkit-scrollbar{display:none}
+#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:var(--nav-h);background:rgba(10,10,20,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;z-index:100}
+.nb{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:8px 10px;color:var(--text3);transition:color .2s;position:relative}
+.nb.active{color:var(--accent)}.ni{font-size:20px;line-height:1}.nl{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+.nbadge{position:absolute;top:4px;right:6px;background:var(--red);color:#fff;font-size:8px;font-weight:800;border-radius:50%;width:14px;height:14px;display:none;align-items:center;justify-content:center}
+.nbadge.show{display:flex}
+.page{display:none;animation:fadeUp .22s ease}.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+/* HERO */
+.hero{background:linear-gradient(135deg,#0c1f25,#1a3040,#0b2d22);padding:24px 20px 20px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(0,200,150,.18) 0%,transparent 70%);border-radius:50%}
+.ht{font-size:27px;font-weight:900;letter-spacing:-1.2px;line-height:1;position:relative;z-index:1}
+.ht span{color:var(--accent)}
+.hs{font-size:11px;color:rgba(255,255,255,.48);margin:5px 0 14px;position:relative;z-index:1}
+.dot{width:6px;height:6px;background:var(--accent);border-radius:50%;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sb{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:50px;padding:11px 17px;cursor:text;position:relative;z-index:1}
+.sb input{background:none;border:none;outline:none;color:var(--text);font-size:14px;flex:1;width:100%;cursor:pointer}
+.sb input::placeholder{color:rgba(255,255,255,.3)}
+.hero-bar{display:flex;align-items:center;gap:10px;margin-top:12px;position:relative;z-index:1}
+.rbtn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:50px;padding:7px 13px;color:rgba(255,255,255,.85);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
+.rbtn:hover{background:rgba(255,255,255,.16)}.rbtn:disabled{opacity:.55;cursor:default}
+.lupd{font-size:10px;color:rgba(255,255,255,.35)}
+.mnote{background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.2);border-radius:8px;padding:7px 12px;font-size:11px;color:var(--accent);margin-top:8px;display:none;position:relative;z-index:1}
+/* SECTIONS */
+.sec{padding:16px 20px 0}
+.stitle{font-size:14px;font-weight:700;margin-bottom:11px;display:flex;align-items:center;justify-content:space-between}
+.see-all{font-size:11px;color:var(--accent);font-weight:600;cursor:pointer;background:none;border:none}
+/* BEST PRICE CARDS */
+.pcards{display:flex;gap:11px;overflow-x:auto;padding-bottom:4px}.pcards::-webkit-scrollbar{display:none}
+.pcard{min-width:148px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;transition:transform .15s,border-color .15s;flex-shrink:0}
+.pcard:hover{transform:translateY(-2px);border-color:rgba(0,200,150,.3)}
+.pcard .pn{font-size:11px;font-weight:600;margin-bottom:3px;line-height:1.3}
+.pcard .ps{font-size:10px;color:var(--text2);margin-bottom:8px}
+.pcard .pp{font-size:20px;font-weight:800;color:var(--accent)}
+.pcard .pd{font-size:9px;color:var(--text3);margin-top:2px}
+.bbadge{display:inline-block;background:var(--adim);color:var(--accent);font-size:9px;font-weight:700;padding:2px 7px;border-radius:50px;margin-bottom:7px;letter-spacing:.5px}
+/* STORE/CAT/BRAND GRIDS */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;cursor:pointer;transition:all .15s;text-align:center}
+.scard:hover,.scard.active{border-color:rgba(0,200,150,.4);background:var(--surface2)}
+.se{font-size:26px;margin-bottom:6px}.sn{font-size:12px;font-weight:700;line-height:1.3}
+.st{font-size:10px;color:var(--text2);margin-top:2px}
+.sbadge{display:inline-block;background:var(--adim);color:var(--accent);font-size:10px;font-weight:600;padding:2px 8px;border-radius:50px;margin-top:6px}
+.cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.ccard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:12px 8px;cursor:pointer;transition:all .15s;text-align:center}
+.ccard:hover{border-color:rgba(0,200,150,.4);background:var(--surface2)}
+.ci{font-size:24px;margin-bottom:4px}.cn{font-size:10px;font-weight:600;line-height:1.3;color:var(--text2)}
+.bgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.bcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:11px}
+.bcard:hover{border-color:rgba(0,200,150,.4);background:var(--surface2)}
+.bico{font-size:22px}.bname{font-size:11px;font-weight:700;line-height:1.3}
+.bsub{font-size:10px;color:var(--text2);margin-top:2px}
+/* TABS */
+.tabs{display:flex;gap:6px;padding:11px 20px;position:sticky;top:0;background:var(--bg);z-index:9}
+.tab{background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .15s;white-space:nowrap}
+.tab.active{background:var(--adim);border-color:var(--accent);color:var(--accent)}
+/* PRODUCT LIST */
+.plist{display:flex;flex-direction:column;gap:8px}
+.pitem{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px;cursor:pointer;transition:all .15s}
+.pitem:hover{border-color:rgba(0,200,150,.22)}
+.piname{font-size:13px;font-weight:700;margin-bottom:5px;line-height:1.3}
+.piprices{display:flex;gap:5px;flex-wrap:wrap}
+.ptag{background:var(--surface2);border-radius:7px;padding:4px 8px;font-size:10px}
+.ptag .pts{color:var(--text2);font-size:9px}.ptag .ptv{font-weight:700;color:var(--text)}
+.ptag.low{background:var(--adim)}.ptag.low .ptv{color:var(--accent)}
+.pupd{font-size:9px;color:var(--text3);margin-top:6px}
+/* PAGE HEADER */
+.ph{padding:16px 20px 0;position:sticky;top:0;background:var(--bg);z-index:10;padding-bottom:8px}
+.pt{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.psub{font-size:12px;color:var(--text2);margin-top:2px}
+/* SEARCH */
+.siwrap{padding:13px 20px;position:sticky;top:0;background:var(--bg);z-index:10}
+.fsb{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:12px 17px}
+.fsb input{background:none;border:none;outline:none;color:var(--text);font-size:14px;flex:1}
+.fsb input::placeholder{color:var(--text3)}
+.sres{padding:0 20px 20px}
+.nores{text-align:center;padding:36px 20px;color:var(--text2)}
+.noico{font-size:40px;margin-bottom:9px}
+/* CHIPS */
+.chips{display:flex;gap:6px;overflow-x:auto;padding:0 20px 11px}.chips::-webkit-scrollbar{display:none}
+.chip{background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--text2);transition:all .15s}
+.chip.active{background:var(--adim);border-color:var(--accent);color:var(--accent)}
+/* FORMS */
+.fl{font-size:11px;font-weight:600;margin-bottom:5px;display:block;color:var(--text2)}
+.fi,.fsel{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:11px 14px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s;-webkit-appearance:none;margin-bottom:12px}
+.fi:focus,.fsel:focus{border-color:var(--accent)}.fi::placeholder{color:var(--text3)}.fsel option{background:var(--surface2)}
+.subbtn{width:100%;background:var(--accent);color:#000;border:none;border-radius:50px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;transition:transform .1s,opacity .1s}
+.subbtn:hover{opacity:.9}.subbtn:active{transform:scale(.98)}
+/* MODAL */
+.mov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);align-items:flex-end;justify-content:center}
+.mov.open{display:flex}
+.msh{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 42px;animation:slideUp .28s ease;max-height:90vh;overflow-y:auto}
+.msh::-webkit-scrollbar{display:none}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhd{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.mcl{float:right;background:var(--surface2);border:none;color:var(--text2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.mprod{font-size:17px;font-weight:800;margin-bottom:3px;clear:both;line-height:1.3}
+.mcat{font-size:12px;color:var(--text2);margin-bottom:14px}
+.mprices{display:flex;flex-direction:column;gap:7px}
+.mpr{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:11px 13px}
+.mpr.best{border:1px solid rgba(0,200,150,.35);background:var(--adim)}
+.mprs{font-size:12px;font-weight:600}.mprp{font-size:16px;font-weight:800;color:var(--accent)}
+.mprbg{font-size:9px;color:var(--accent);font-weight:700;background:rgba(0,200,150,.15);padding:2px 6px;border-radius:50px;display:inline-block;margin-top:2px}
+.mupd{font-size:10px;color:var(--text3);margin-top:11px;text-align:center}
+.dtin{background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.22);border-radius:9px;padding:8px 12px;margin-top:10px;font-size:11px;color:var(--gold)}
+/* TAGS */
+.ctag{display:inline-flex;align-items:center;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);color:var(--red);font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;margin-left:4px}
+.dtibg{display:inline-flex;align-items:center;background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.25);color:var(--gold);font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;margin-left:4px}
+.brandtag{display:inline-flex;align-items:center;background:var(--adim);border:1px solid rgba(0,200,150,.2);color:var(--accent);font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;margin-left:4px}
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--nav-h)+14px);left:50%;transform:translateX(-50%) translateY(18px);background:var(--accent);color:#000;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:800;z-index:999;opacity:0;transition:all .28s;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ALERT BANNER */
+.abanner{background:linear-gradient(135deg,rgba(0,200,150,.14),rgba(0,200,150,.05));border:1px solid rgba(0,200,150,.3);border-radius:var(--r);padding:13px;margin:0 20px;display:none}
+.abanner-title{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px}
+.abanner-item{font-size:11px;color:var(--text2);margin-bottom:3px;display:flex;justify-content:space-between}
+/* SAVINGS CALCULATOR */
+.cdd{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);max-height:210px;overflow-y:auto;margin-bottom:10px}
+.cdd::-webkit-scrollbar{display:none}
+.cdd-item{padding:10px 13px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;transition:background .12s}
+.cdd-item:last-child{border-bottom:none}.cdd-item:hover{background:var(--surface3)}
+.cdd-price{color:var(--accent);font-weight:700;font-size:12px}
+.cart-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 13px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px}
+.ci-info{flex:1}.ci-name{font-size:12px;font-weight:700;margin-bottom:4px}
+.ci-store{font-size:10px;color:var(--text2)}
+.ci-price{font-size:17px;font-weight:800;color:var(--accent);white-space:nowrap}
+.ci-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0}
+.csummary-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:12px}
+.cs-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:7px}
+.cs-big{text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.savings-num{font-size:34px;font-weight:900;color:var(--accent);line-height:1}
+.route-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:8px}
+.rc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.rc-store{font-size:13px;font-weight:700}.rc-total{font-size:13px;font-weight:800;color:var(--accent)}
+.rc-item{font-size:11px;color:var(--text2);margin-bottom:3px;display:flex;justify-content:space-between}
+/* PRICE ALERTS */
+.alert-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:8px}
+.alert-card.triggered{border-color:rgba(0,200,150,.4);background:var(--adim)}
+.alert-card.expired{opacity:.5}
+.ac-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.ac-name{font-size:13px;font-weight:700}
+.ac-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px}
+.ac-info{font-size:11px;color:var(--text2);margin-top:4px}
+.ac-status{font-size:11px;font-weight:700;margin-top:6px}
+.ac-status.ok{color:var(--accent)}.ac-status.wait{color:var(--gold)}
+.alert-add-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px}
+/* LOADING */
+.spin{display:inline-block;animation:spin .7s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@media(min-width:480px){#app{box-shadow:0 0 60px rgba(0,0,0,.6)}}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="content">
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="ht">Taclo<span>Price</span> 🛒</div>
+    <div class="hs"><span class="dot"></span>10 Stores · 191 Products · 17 Brands · Live Pricing</div>
+    <div class="sb" onclick="switchPage('search');setTimeout(()=>document.getElementById('msearch').focus(),80)">
+      <span>🔍</span><input placeholder="Search products, brands, stores…" readonly>
+    </div>
+    <div class="hero-bar">
+      <button class="rbtn" id="refresh-btn" onclick="refreshPrices()">🔄 Refresh Prices</button>
+      <span class="lupd" id="lupd">Updated Apr 21, 2026</span>
+    </div>
+    <div class="mnote" id="mnote"></div>
+  </div>
+
+  <div id="abanner" class="abanner" style="margin-top:14px">
+    <div class="abanner-title">🔔 Price Alert Triggered!</div>
+    <div id="abanner-items"></div>
+    <button onclick="dismissAlerts()" style="font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;margin-top:4px">Dismiss</button>
+  </div>
+
+  <div class="sec">
+    <div class="stitle">🏷️ Best Prices Today <button class="see-all" onclick="switchPage('search')">See all</button></div>
+    <div class="pcards" id="best-prices"></div>
+  </div>
+  <div class="sec" style="margin-top:6px">
+    <div class="stitle">🏪 Stores <button class="see-all" onclick="switchPage('stores')">All 10</button></div>
+    <div class="sgrid" id="home-stores"></div>
+  </div>
+  <div class="sec" style="margin-top:6px">
+    <div class="stitle">📢 Community Reports <button class="see-all" onclick="switchPage('tools');showTool('report')">+ Report</button></div>
+    <div id="recent-reports" class="plist"></div>
+  </div>
+  <div style="padding:14px 20px 22px">
+    <div class="dtin">📋 <strong>DTI Reference:</strong> Prices are DTI SRP-aligned (Apr 21, 2026) with automatic AI-powered live refresh. Tap 🔄 Refresh Prices to update.</div>
+  </div>
+</div>
+
+<!-- STORES -->
+<div class="page" id="page-stores">
+  <div class="ph"><div class="pt">Stores</div><div class="psub">10 stores across Tacloban City</div></div>
+  <div style="padding:12px 20px"><div class="sgrid" id="all-stores"></div></div>
+  <div id="store-detail" style="display:none">
+    <div class="chips" id="store-chips"></div>
+    <div style="padding:0 20px"><div class="stitle" id="store-dtitle"></div><div class="plist" id="store-plist"></div></div>
+  </div>
+</div>
+
+<!-- BROWSE -->
+<div class="page" id="page-categories">
+  <div class="ph"><div class="pt">Browse</div></div>
+  <div class="tabs">
+    <button class="tab active" id="tab-cats" onclick="showBrowseTab('cats')">📦 Categories</button>
+    <button class="tab" id="tab-brands" onclick="showBrowseTab('brands')">🏭 Brands</button>
+  </div>
+  <div id="cat-grid-wrap" style="padding:0 20px 20px"><div class="cgrid" id="cat-grid"></div></div>
+  <div id="brand-grid-wrap" style="display:none;padding:0 20px 20px"><div class="bgrid" id="brand-grid"></div></div>
+  <div id="cat-detail" style="display:none;padding:0 20px 20px">
+    <div class="stitle"><span id="cat-dtitle"></span><button class="see-all" onclick="closeCatDetail()">← Back</button></div>
+    <div class="plist" id="cat-plist"></div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="page" id="page-search">
+  <div class="siwrap">
+    <div class="fsb"><span>🔍</span><input id="msearch" placeholder="Search products, brands, stores…" oninput="doSearch(this.value)"></div>
+  </div>
+  <div class="sres" id="sres">
+    <div class="nores"><div class="noico">🔍</div><div style="font-weight:600">Search across 10 stores</div><div style="font-size:11px;color:var(--text3);margin-top:6px">Try "Coca-Cola", "Ariel", "Century Tuna", "Milo"</div></div>
+  </div>
+</div>
+
+<!-- TOOLS: Calculator | Alerts | Report -->
+<div class="page" id="page-tools">
+  <div class="ph"><div class="pt">Tools</div><div class="psub">Smart shopping utilities</div></div>
+  <div class="tabs">
+    <button class="tab active" id="ttab-calc" onclick="showTool('calc')">🧮 Calculator</button>
+    <button class="tab" id="ttab-alerts" onclick="showTool('alerts')">🔔 Alerts</button>
+    <button class="tab" id="ttab-report" onclick="showTool('report')">📢 Report</button>
+  </div>
+
+  <!-- SAVINGS CALCULATOR -->
+  <div id="tool-calc" style="padding:0 20px 28px">
+    <div class="fsb" style="margin-bottom:8px">
+      <span>➕</span>
+      <input id="csearch" placeholder="Search product to add to list…" oninput="calcSearch(this.value)" autocomplete="off">
+    </div>
+    <div id="cdd" class="cdd" style="display:none"></div>
+    <div id="cempty" style="text-align:center;padding:28px 0;color:var(--text3)">
+      <div style="font-size:36px;margin-bottom:8px">🛒</div>
+      <div style="font-size:13px">Add products to calculate savings</div>
+      <div style="font-size:11px;margin-top:4px">We'll show you the cheapest store for each item</div>
+    </div>
+    <div id="citems"></div>
+    <div id="csummary" style="display:none">
+      <div class="csummary-box">
+        <div class="cs-row"><span style="color:var(--text2)">🟢 Smart shopping (cheapest each):</span><span id="c-smart" style="font-weight:800;color:var(--accent)"></span></div>
+        <div class="cs-row"><span style="color:var(--text2)">🔴 Single store (SM benchmark):</span><span id="c-ref" style="font-weight:600;color:var(--text2)"></span></div>
+        <div class="cs-big">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Total Savings</div>
+          <div class="savings-num" id="c-sav"></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">buying smart across stores</div>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:700;margin:14px 0 8px;color:var(--text2)">🗺️ Smart Shopping Route</div>
+      <div id="croute"></div>
+      <button onclick="clearCart()" style="width:100%;background:none;border:1px solid var(--border);border-radius:50px;padding:11px;color:var(--text3);font-size:12px;cursor:pointer;margin-top:10px">🗑️ Clear Shopping List</button>
+    </div>
+  </div>
+
+  <!-- PRICE ALERTS -->
+  <div id="tool-alerts" style="display:none;padding:0 20px 28px">
+    <div class="alert-add-box">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">🔔 Set New Price Alert</div>
+      <label class="fl">Product Name</label>
+      <input class="fi" id="al-prod" placeholder="e.g. Coca-Cola 1.5L, Ariel 1kg">
+      <label class="fl">Store (optional — leave blank for any store)</label>
+      <select class="fsel" id="al-store"><option value="any">Any store (best available price)</option></select>
+      <label class="fl">Alert me when price drops to ₱</label>
+      <input class="fi" id="al-price" type="number" placeholder="e.g. 70" min="0">
+      <button class="subbtn" onclick="addAlert()">Set Alert 🔔</button>
+    </div>
+    <div style="font-size:12px;font-weight:700;margin-bottom:9px;color:var(--text2)">Your Active Alerts</div>
+    <div id="alertlist"><div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No alerts set. Add one above!</div></div>
+  </div>
+
+  <!-- REPORT -->
+  <div id="tool-report" style="display:none;padding:0 20px 28px">
+    <label class="fl">Product Name *</label>
+    <input class="fi" id="r-prod" placeholder="e.g. Coca-Cola 1.5L">
+    <label class="fl">Store *</label>
+    <select class="fsel" id="r-store"><option value="">Select store…</option></select>
+    <label class="fl">Category *</label>
+    <select class="fsel" id="r-cat"><option value="">Select category…</option></select>
+    <label class="fl">Price (₱) *</label>
+    <input class="fi" id="r-price" type="number" placeholder="e.g. 85" min="0">
+    <label class="fl">Your name / handle (optional)</label>
+    <input class="fi" id="r-name" placeholder="e.g. Maria T.">
+    <button class="subbtn" onclick="submitReport()">Submit Price Report ✓</button>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:11px">Reports tagged 📢 and shown across the app.</div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<!-- NAV -->
+<div id="nav">
+  <button class="nb active" onclick="switchPage('home')" data-page="home"><span class="ni">🏠</span><span class="nl">Home</span></button>
+  <button class="nb" onclick="switchPage('stores')" data-page="stores"><span class="ni">🏪</span><span class="nl">Stores</span></button>
+  <button class="nb" onclick="switchPage('categories')" data-page="categories"><span class="ni">📦</span><span class="nl">Browse</span></button>
+  <button class="nb" onclick="switchPage('search')" data-page="search"><span class="ni">🔍</span><span class="nl">Search</span></button>
+  <button class="nb" onclick="switchPage('tools')" data-page="tools">
+    <span class="ni" style="position:relative">🛠️<span class="nbadge" id="alert-badge">0</span></span>
+    <span class="nl">Tools</span>
+  </button>
+</div>
+</div><!-- /app -->
+
+<!-- MODAL -->
+<div class="mov" id="modal" onclick="closeModal(event)">
+  <div class="msh">
+    <div class="mhd"></div>
+    <button class="mcl" onclick="closeModal()">✕</button>
+    <div class="mprod" id="m-prod"></div>
+    <div class="mcat" id="m-cat"></div>
+    <div class="mprices" id="m-prices"></div>
+    <div class="mupd" id="m-upd"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button id="m-alert-btn" style="flex:1;background:none;border:1px solid var(--border);border-radius:50px;padding:10px;font-size:12px;color:var(--text2);cursor:pointer" onclick="setAlertFromModal()">🔔 Set Alert</button>
+      <button id="m-cart-btn" style="flex:1;background:var(--adim);border:1px solid rgba(0,200,150,.3);border-radius:50px;padding:10px;font-size:12px;color:var(--accent);font-weight:700;cursor:pointer" onclick="addToCartFromModal()">➕ Add to List</button>
+    </div>
+    <div class="dtin" style="margin-top:10px">📋 Prices are DTI SRP-referenced. Tap 🔄 on Home to refresh live prices.</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════
+// DATA
+// ════════════════════════════════
+const STORES=[
+  {id:'sm',name:'SM City Tacloban',type:'Department Store',icon:'🏬'},
+  {id:'gaisano',name:'Gaisano Capital',type:'Department Store',icon:'🏬'},
+  {id:'metrogaisano',name:'Metro Gaisano',type:'Supermarket',icon:'🏬'},
+  {id:'robinsons',name:'Robinsons Tacloban',type:'Department Store',icon:'🏬'},
+  {id:'puregold',name:'Puregold',type:'Supermarket',icon:'🛒'},
+  {id:'lcc',name:'LCC Mall',type:'Grocery',icon:'🛒'},
+  {id:'walter',name:'Walter Mart',type:'Grocery',icon:'🛒'},
+  {id:'savemore',name:'Savemore Market',type:'Grocery',icon:'🛒'},
+  {id:'primark',name:'Primark Savemore',type:'Grocery',icon:'🛒'},
+  {id:'7eleven',name:'7-Eleven',type:'Convenience',icon:'🏪'},
+];
+const CATS=[
+  {id:'frozen',name:'Frozen Goods',icon:'🧊'},{id:'icecream',name:'Ice Cream & Desserts',icon:'🍦'},
+  {id:'bakery',name:'Bakery & Breakfast',icon:'🍞'},{id:'dairy',name:'Dairy & Eggs',icon:'🥛'},
+  {id:'choco',name:'Chocolates & Sweets',icon:'🍫'},{id:'snacks',name:'Snacks',icon:'🍿'},
+  {id:'beverages',name:'Beverages',icon:'🥤'},{id:'coffee',name:'Coffee, Tea & Choco',icon:'☕'},
+  {id:'alcohol',name:'Alcoholic Beverages',icon:'🍺'},{id:'canned',name:'Canned & Dried Goods',icon:'🥫'},
+  {id:'pantry',name:'Food Pantry',icon:'🧂'},{id:'condiments',name:'Condiments & Sauces',icon:'🍶'},
+  {id:'baking',name:'Baking & Sugar',icon:'🧁'},{id:'personalcare',name:'Personal Care',icon:'🧴'},
+  {id:'beauty',name:'Beauty',icon:'💄'},{id:'menscare',name:"Men's Care",icon:'🪒'},
+  {id:'baby',name:'Mom & Baby',icon:'👶'},{id:'pharmacy',name:'Pharmacy',icon:'💊'},
+  {id:'health',name:'Health & Wellness',icon:'🏥'},{id:'pets',name:'Pet Needs',icon:'🐾'},
+  {id:'household',name:'Household Essentials',icon:'🏠'},{id:'laundry',name:'Laundry & Cleaning',icon:'🧺'},
+  {id:'tobacco',name:'Cigarettes & Tobacco',icon:'🚬'},{id:'electronics',name:'Mobile & Electronics',icon:'📱'},
+  {id:'books',name:'Books & Stationery',icon:'📚'},{id:'party',name:'Party & Gifts',icon:'🎁'},
+];
+const BRANDS=[
+  {id:'cocacola',name:'Coca-Cola Philippines',icon:'🥤'},{id:'pepsi',name:'PepsiCo Philippines',icon:'🥤'},
+  {id:'sanmiguel',name:'San Miguel Corp.',icon:'🍺'},{id:'asia',name:'Asia Brewery',icon:'🍺'},
+  {id:'zesto',name:'Zesto Corp.',icon:'🧃'},{id:'nestle',name:'Nestlé Philippines',icon:'☕'},
+  {id:'urc',name:'Universal Robina Corp.',icon:'🍿'},{id:'magnolia',name:'Magnolia / SMC',icon:'🥛'},
+  {id:'purefoods',name:'Purefoods / SMC',icon:'🥩'},{id:'selecta',name:'Selecta / Unilever',icon:'🍦'},
+  {id:'unilever',name:'Unilever Philippines',icon:'🧴'},{id:'pg',name:'Procter & Gamble',icon:'🧼'},
+  {id:'nutriasia',name:'NutriAsia',icon:'🍶'},{id:'ginebra',name:'Ginebra San Miguel',icon:'🍾'},
+  {id:'delmonte',name:'Del Monte Philippines',icon:'🥫'},{id:'dole',name:'Dole Philippines',icon:'🍍'},
+  {id:'bounty',name:'Bounty Plus / Fresh',icon:'💊'},{id:'alaska',name:'Alaska Milk Corp.',icon:'🥛'},
+];
+const P=[
+  {id:'p1',name:'Purefoods Tender Juicy Hotdog 500g',cat:'frozen',brand:'purefoods',prices:{sm:188,gaisano:182,metrogaisano:180,robinsons:192,puregold:175,lcc:178,savemore:172,primark:172},upd:'2026-04-21'},
+  {id:'p2',name:'Purefoods Chicken Tocino 220g',cat:'frozen',brand:'purefoods',prices:{sm:115,gaisano:108,metrogaisano:107,robinsons:120,puregold:105,savemore:102,primark:102},upd:'2026-04-21'},
+  {id:'p3',name:'Purefoods Bacon Strips 150g',cat:'frozen',brand:'purefoods',prices:{sm:142,gaisano:135,metrogaisano:134,robinsons:148,puregold:130,savemore:128},upd:'2026-04-21'},
+  {id:'p4',name:'Purefoods Luncheon Meat 340g',cat:'frozen',brand:'purefoods',prices:{sm:165,gaisano:158,metrogaisano:156,robinsons:172,puregold:152,savemore:148},upd:'2026-04-21'},
+  {id:'p5',name:'Magnolia Chicken Nuggets 400g',cat:'frozen',brand:'magnolia',prices:{sm:172,gaisano:165,metrogaisano:163,robinsons:178,puregold:158,lcc:160},upd:'2026-04-21'},
+  {id:'p6',name:'Bounty Fresh Chicken Breast 1kg',cat:'frozen',brand:'bounty',prices:{sm:192,gaisano:182,metrogaisano:180,robinsons:198,puregold:175,savemore:172},upd:'2026-04-21'},
+  {id:'p7',name:'San Miguel Beef Tapa 250g',cat:'frozen',brand:'sanmiguel',prices:{sm:148,gaisano:142,metrogaisano:140,robinsons:155,puregold:138,savemore:135},upd:'2026-04-21'},
+  {id:'p8',name:'Delimondo Corned Beef 175g',cat:'frozen',brand:'sanmiguel',prices:{sm:128,gaisano:122,metrogaisano:120,robinsons:135,puregold:118,'7eleven':138},upd:'2026-04-21'},
+  {id:'p9',name:'Selecta Cornetto 110ml',cat:'icecream',brand:'selecta',prices:{sm:58,gaisano:52,metrogaisano:52,robinsons:60,puregold:48,'7eleven':65},upd:'2026-04-21'},
+  {id:'p10',name:'Selecta Magnum Almond 80ml',cat:'icecream',brand:'selecta',prices:{sm:95,gaisano:88,metrogaisano:88,robinsons:102,puregold:85,'7eleven':108},upd:'2026-04-21'},
+  {id:'p11',name:'Selecta Ice Cream 1.4L',cat:'icecream',brand:'selecta',prices:{sm:275,gaisano:265,metrogaisano:262,robinsons:285,puregold:258,lcc:255},upd:'2026-04-21'},
+  {id:'p12',name:'Magnolia Ice Cream 1.4L',cat:'icecream',brand:'magnolia',prices:{sm:285,gaisano:275,metrogaisano:272,robinsons:295,puregold:265,lcc:262},upd:'2026-04-21'},
+  {id:'p13',name:'Nestlé Drumstick 110ml',cat:'icecream',brand:'nestle',prices:{sm:62,gaisano:55,metrogaisano:55,robinsons:68,puregold:52,'7eleven':70},upd:'2026-04-21'},
+  {id:'p14',name:'Fudgee Barr Cake 10s',cat:'icecream',brand:'urc',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:78,'7eleven':95,savemore:75,primark:75},upd:'2026-04-21'},
+  {id:'p15',name:'Gardenia White Bread 400g',cat:'bakery',brand:'urc',prices:{sm:85,gaisano:78,metrogaisano:77,robinsons:92,puregold:73,savemore:72,primark:72,'7eleven':92},upd:'2026-04-21',dti:80},
+  {id:'p16',name:'SkyFlakes Crackers 250g',cat:'bakery',brand:'urc',prices:{sm:55,gaisano:48,metrogaisano:47,robinsons:62,puregold:45,savemore:43,primark:43,'7eleven':62},upd:'2026-04-21'},
+  {id:'p17',name:'Rebisco Crackers 250g',cat:'bakery',brand:'urc',prices:{sm:62,gaisano:55,metrogaisano:54,robinsons:68,puregold:52,savemore:50,primark:50,'7eleven':68},upd:'2026-04-21'},
+  {id:'p18',name:'Magic Flakes 33g',cat:'bakery',brand:'urc',prices:{sm:18,gaisano:16,metrogaisano:16,puregold:14,'7eleven':22,savemore:14,primark:14},upd:'2026-04-21'},
+  {id:'p19',name:'Hansel Biscuits 150g',cat:'bakery',brand:'urc',prices:{sm:45,gaisano:42,metrogaisano:41,puregold:38,savemore:38,primark:38},upd:'2026-04-21'},
+  {id:'p20',name:'Cream O Cookies 300g',cat:'bakery',brand:'urc',prices:{sm:78,gaisano:72,metrogaisano:70,robinsons:85,puregold:68,savemore:65,primark:65},upd:'2026-04-21'},
+  {id:'p21',name:'Presto Crème Sandwich 300g',cat:'bakery',brand:'urc',prices:{sm:75,gaisano:68,metrogaisano:67,puregold:65,savemore:62,primark:62},upd:'2026-04-21'},
+  {id:'p22',name:'Quaker Oatmeal 800g',cat:'bakery',brand:'urc',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:195,puregold:172},upd:'2026-04-21'},
+  {id:'p23',name:'Alaska Evap Milk 370ml',cat:'dairy',brand:'alaska',prices:{sm:48,gaisano:45,metrogaisano:44,robinsons:52,puregold:40,lcc:40,savemore:40,primark:40,'7eleven':58},upd:'2026-04-21',dti:46},
+  {id:'p24',name:'Alaska Condensada 300ml',cat:'dairy',brand:'alaska',prices:{sm:58,gaisano:52,metrogaisano:51,puregold:48,savemore:46,primark:46,'7eleven':65},upd:'2026-04-21'},
+  {id:'p25',name:'Nestlé Bear Brand 300g',cat:'dairy',brand:'nestle',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:195,puregold:170,savemore:168,primark:168},upd:'2026-04-21'},
+  {id:'p26',name:'Nestlé All Purpose Cream 250ml',cat:'dairy',brand:'nestle',prices:{sm:58,gaisano:52,metrogaisano:51,robinsons:62,puregold:48,savemore:46,primark:46},upd:'2026-04-21'},
+  {id:'p27',name:'Nestlé Condensed Milk 390ml',cat:'dairy',brand:'nestle',prices:{sm:65,gaisano:58,metrogaisano:57,robinsons:70,puregold:55,savemore:52,primark:52},upd:'2026-04-21'},
+  {id:'p28',name:'Magnolia Fresh Milk 1L',cat:'dairy',brand:'magnolia',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:92,puregold:78,savemore:75,primark:75},upd:'2026-04-21'},
+  {id:'p29',name:'Magnolia Gold Butter 225g',cat:'dairy',brand:'magnolia',prices:{sm:168,gaisano:158,metrogaisano:156,robinsons:175,puregold:150},upd:'2026-04-21'},
+  {id:'p30',name:'Star Margarine 100g',cat:'dairy',brand:'magnolia',prices:{sm:28,gaisano:25,metrogaisano:24,puregold:22,savemore:22,primark:22,'7eleven':32},upd:'2026-04-21'},
+  {id:'p31',name:'Eden Cheese 165g',cat:'dairy',brand:'nestle',prices:{sm:105,gaisano:98,metrogaisano:97,robinsons:112,puregold:92,savemore:90,primark:90},upd:'2026-04-21'},
+  {id:'p32',name:'Eggs (Large) 6 pcs',cat:'dairy',brand:'',prices:{sm:78,gaisano:72,metrogaisano:70,puregold:65,lcc:65,savemore:65,primark:65},upd:'2026-04-21',dti:75},
+  {id:'p33',name:'Nestlé Chuckie Chocolate Milk 250ml',cat:'dairy',brand:'nestle',prices:{sm:28,gaisano:25,metrogaisano:25,robinsons:30,puregold:23,'7eleven':35},upd:'2026-04-21'},
+  {id:'p34',name:'Magnolia Chocolate Drink 1L',cat:'dairy',brand:'magnolia',prices:{sm:92,gaisano:85,metrogaisano:84,robinsons:98,puregold:80,savemore:78,primark:78},upd:'2026-04-21'},
+  {id:'p35',name:'KitKat 35g',cat:'choco',brand:'nestle',prices:{sm:48,gaisano:45,metrogaisano:45,robinsons:52,puregold:42,'7eleven':55},upd:'2026-04-21'},
+  {id:'p36',name:'Ricoa Flat Tops 16g',cat:'choco',brand:'urc',prices:{sm:18,gaisano:18,metrogaisano:18,puregold:15,savemore:15,'7eleven':22},upd:'2026-04-21'},
+  {id:'p37',name:'Choc Nut 24g',cat:'choco',brand:'urc',prices:{sm:12,gaisano:12,metrogaisano:12,puregold:10,savemore:10,'7eleven':15},upd:'2026-04-21'},
+  {id:'p38',name:'Cloud 9 56g',cat:'choco',brand:'urc',prices:{sm:28,gaisano:25,metrogaisano:25,puregold:22,savemore:22,'7eleven':35},upd:'2026-04-21'},
+  {id:'p39',name:"Hershey's Kisses 36g",cat:'choco',brand:'urc',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:78},upd:'2026-04-21'},
+  {id:'p40',name:'Nips Chocolate 100g',cat:'choco',brand:'urc',prices:{sm:55,gaisano:48,metrogaisano:47,robinsons:62,puregold:45},upd:'2026-04-21'},
+  {id:'p41',name:'Piattos Cheese 85g',cat:'snacks',brand:'urc',prices:{sm:52,gaisano:48,metrogaisano:47,robinsons:58,puregold:45,savemore:43,'7eleven':58},upd:'2026-04-21'},
+  {id:'p42',name:'Boy Bawang Cornick 100g',cat:'snacks',brand:'urc',prices:{sm:38,gaisano:35,metrogaisano:34,puregold:30,savemore:30,primark:30,'7eleven':42},upd:'2026-04-21'},
+  {id:'p43',name:'Nova Country Cheddar 78g',cat:'snacks',brand:'urc',prices:{sm:45,gaisano:42,metrogaisano:41,puregold:38,savemore:36,'7eleven':52},upd:'2026-04-21'},
+  {id:'p44',name:'Oishi Prawn Crackers 90g',cat:'snacks',brand:'urc',prices:{sm:55,gaisano:52,metrogaisano:50,puregold:48,savemore:46,'7eleven':62},upd:'2026-04-21'},
+  {id:'p45',name:"Lay's Classic 73g",cat:'snacks',brand:'pepsi',prices:{sm:65,gaisano:58,metrogaisano:57,robinsons:72,puregold:55,'7eleven':75},upd:'2026-04-21'},
+  {id:'p46',name:'Chiz Curls 55g',cat:'snacks',brand:'urc',prices:{sm:35,gaisano:32,metrogaisano:31,puregold:28,savemore:28,'7eleven':40},upd:'2026-04-21'},
+  {id:'p47',name:'Coca-Cola Original 1.5L',cat:'beverages',brand:'cocacola',prices:{sm:85,gaisano:78,metrogaisano:77,robinsons:92,puregold:73,lcc:72,savemore:72,primark:72,'7eleven':98},upd:'2026-04-21',dti:82},
+  {id:'p48',name:'Coca-Cola Original 330ml Can',cat:'beverages',brand:'cocacola',prices:{sm:30,gaisano:28,metrogaisano:28,robinsons:32,puregold:26,savemore:25,primark:25,'7eleven':38},upd:'2026-04-21'},
+  {id:'p49',name:'Coca-Cola Original 1L',cat:'beverages',brand:'cocacola',prices:{sm:62,gaisano:58,metrogaisano:57,robinsons:68,puregold:55,savemore:52,primark:52,'7eleven':75},upd:'2026-04-21'},
+  {id:'p50',name:'Coca-Cola Zero Sugar 1.5L',cat:'beverages',brand:'cocacola',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:78,savemore:75,primark:75},upd:'2026-04-21'},
+  {id:'p51',name:'Coca-Cola Zero Sugar 330ml',cat:'beverages',brand:'cocacola',prices:{sm:32,gaisano:30,metrogaisano:30,robinsons:35,puregold:28,'7eleven':40},upd:'2026-04-21'},
+  {id:'p52',name:'Sprite 1.5L',cat:'beverages',brand:'cocacola',prices:{sm:78,gaisano:72,metrogaisano:71,robinsons:85,puregold:68,savemore:65,primark:65,'7eleven':92},upd:'2026-04-21'},
+  {id:'p53',name:'Sprite 330ml Can',cat:'beverages',brand:'cocacola',prices:{sm:28,gaisano:26,metrogaisano:26,robinsons:30,puregold:24,savemore:23,'7eleven':36},upd:'2026-04-21'},
+  {id:'p54',name:'Royal Tru-Orange 1.5L',cat:'beverages',brand:'cocacola',prices:{sm:72,gaisano:68,metrogaisano:67,robinsons:78,puregold:64,savemore:62,primark:62,'7eleven':85},upd:'2026-04-21'},
+  {id:'p55',name:'Royal Tru-Orange 330ml',cat:'beverages',brand:'cocacola',prices:{sm:25,gaisano:22,metrogaisano:22,robinsons:28,puregold:20,savemore:19,'7eleven':32},upd:'2026-04-21'},
+  {id:'p56',name:'Fanta Orange 330ml',cat:'beverages',brand:'cocacola',prices:{sm:30,gaisano:28,metrogaisano:28,robinsons:32,puregold:26,'7eleven':38},upd:'2026-04-21'},
+  {id:'p57',name:'Powerade Mountain Blast 500ml',cat:'beverages',brand:'cocacola',prices:{sm:42,gaisano:38,metrogaisano:37,robinsons:48,puregold:36,'7eleven':52},upd:'2026-04-21'},
+  {id:'p58',name:'Minute Maid Pulpy Orange 1L',cat:'beverages',brand:'cocacola',prices:{sm:72,gaisano:65,metrogaisano:64,robinsons:78,puregold:62},upd:'2026-04-21'},
+  {id:'p59',name:'Minute Maid Nutriboost 300ml',cat:'beverages',brand:'cocacola',prices:{sm:35,gaisano:32,metrogaisano:31,robinsons:40,puregold:30,'7eleven':42},upd:'2026-04-21'},
+  {id:'p60',name:'Wilkins Distilled Water 1L',cat:'beverages',brand:'cocacola',prices:{sm:25,gaisano:22,metrogaisano:22,puregold:20,savemore:18,'7eleven':30},upd:'2026-04-21'},
+  {id:'p61',name:'Schweppes Tonic Water 250ml',cat:'beverages',brand:'cocacola',prices:{sm:32,gaisano:28,metrogaisano:28,robinsons:36,puregold:26,'7eleven':40},upd:'2026-04-21'},
+  {id:'p62',name:'Nestlé Nestea Iced Tea 500ml',cat:'beverages',brand:'nestle',prices:{sm:22,gaisano:20,metrogaisano:20,puregold:18,savemore:17,'7eleven':28},upd:'2026-04-21'},
+  {id:'p63',name:'Pepsi Cola 1.5L',cat:'beverages',brand:'pepsi',prices:{sm:78,gaisano:72,metrogaisano:71,robinsons:85,puregold:68,savemore:65,primark:65,'7eleven':92},upd:'2026-04-21'},
+  {id:'p64',name:'Pepsi Cola 330ml Can',cat:'beverages',brand:'pepsi',prices:{sm:28,gaisano:26,metrogaisano:26,robinsons:30,puregold:24,savemore:23,'7eleven':36},upd:'2026-04-21'},
+  {id:'p65',name:'Pepsi Black 1.5L',cat:'beverages',brand:'pepsi',prices:{sm:82,gaisano:75,metrogaisano:74,robinsons:90,puregold:70,savemore:68,primark:68},upd:'2026-04-21'},
+  {id:'p66',name:'7-Up 1.5L',cat:'beverages',brand:'pepsi',prices:{sm:72,gaisano:68,metrogaisano:67,robinsons:78,puregold:64,savemore:62,primark:62,'7eleven':85},upd:'2026-04-21'},
+  {id:'p67',name:'7-Up 330ml Can',cat:'beverages',brand:'pepsi',prices:{sm:25,gaisano:23,metrogaisano:23,robinsons:28,puregold:21,savemore:20,'7eleven':33},upd:'2026-04-21'},
+  {id:'p68',name:'Mountain Dew 1.5L',cat:'beverages',brand:'pepsi',prices:{sm:68,gaisano:62,metrogaisano:61,robinsons:75,puregold:58,savemore:55,primark:55,'7eleven':82},upd:'2026-04-21'},
+  {id:'p69',name:'Mountain Dew 330ml Can',cat:'beverages',brand:'pepsi',prices:{sm:28,gaisano:26,metrogaisano:26,robinsons:30,puregold:24,savemore:22,'7eleven':36},upd:'2026-04-21'},
+  {id:'p70',name:'Mirinda Orange 1.5L',cat:'beverages',brand:'pepsi',prices:{sm:68,gaisano:62,metrogaisano:61,puregold:58,savemore:55,primark:55,'7eleven':80},upd:'2026-04-21'},
+  {id:'p71',name:'Gatorade Blue 500ml',cat:'beverages',brand:'pepsi',prices:{sm:48,gaisano:42,metrogaisano:41,robinsons:55,puregold:38,'7eleven':58},upd:'2026-04-21'},
+  {id:'p72',name:'Sting Energy Drink 330ml',cat:'beverages',brand:'pepsi',prices:{sm:35,gaisano:32,metrogaisano:32,puregold:28,savemore:27,'7eleven':42},upd:'2026-04-21'},
+  {id:'p73',name:'C2 Green Tea 355ml',cat:'beverages',brand:'urc',prices:{sm:28,gaisano:25,metrogaisano:24,robinsons:32,puregold:22,savemore:20,primark:20,'7eleven':38},upd:'2026-04-21'},
+  {id:'p74',name:'Cobra Energy Drink 240ml',cat:'beverages',brand:'asia',prices:{sm:32,gaisano:28,metrogaisano:28,puregold:25,'7eleven':38,savemore:25},upd:'2026-04-21'},
+  {id:'p75',name:'Summit Water 500ml',cat:'beverages',brand:'asia',prices:{sm:20,gaisano:18,metrogaisano:18,puregold:15,savemore:14,'7eleven':25},upd:'2026-04-21'},
+  {id:'p76',name:'Zesto Orange Juice 250ml',cat:'beverages',brand:'zesto',prices:{sm:15,gaisano:12,metrogaisano:12,puregold:10,savemore:10,primark:10,'7eleven':18},upd:'2026-04-21'},
+  {id:'p77',name:'Zesto Apple Juice 250ml',cat:'beverages',brand:'zesto',prices:{sm:15,gaisano:12,metrogaisano:12,puregold:10,savemore:10,primark:10,'7eleven':18},upd:'2026-04-21'},
+  {id:'p78',name:'Zesto Dalandan Drink 250ml',cat:'beverages',brand:'zesto',prices:{sm:15,gaisano:12,metrogaisano:12,puregold:10,savemore:10,primark:10,'7eleven':18},upd:'2026-04-21'},
+  {id:'p79',name:'Zesto Pineapple Drink 250ml',cat:'beverages',brand:'zesto',prices:{sm:15,gaisano:12,metrogaisano:12,puregold:10,savemore:10,primark:10,'7eleven':18},upd:'2026-04-21'},
+  {id:'p80',name:'Nescafé 3-in-1 Original 25g',cat:'coffee',brand:'nestle',prices:{sm:10,gaisano:10,metrogaisano:10,puregold:9,savemore:9,primark:9,'7eleven':13},upd:'2026-04-21'},
+  {id:'p81',name:'Milo Powder 300g',cat:'coffee',brand:'nestle',prices:{sm:172,gaisano:162,metrogaisano:160,robinsons:178,puregold:155,savemore:152,primark:152},upd:'2026-04-21',dti:165},
+  {id:'p82',name:'Maggi Magic Sarap 8g',cat:'coffee',brand:'nestle',prices:{sm:10,gaisano:9,metrogaisano:9,puregold:8,savemore:8,primark:8,'7eleven':12},upd:'2026-04-21'},
+  {id:'p83',name:'Great Taste White Coffee 30g',cat:'coffee',brand:'urc',prices:{sm:22,gaisano:20,metrogaisano:19,puregold:18,savemore:17,primark:17,'7eleven':26},upd:'2026-04-21'},
+  {id:'p84',name:'Kopiko Brown Coffee 30g',cat:'coffee',brand:'urc',prices:{sm:18,gaisano:18,metrogaisano:18,puregold:16,savemore:15,'7eleven':22},upd:'2026-04-21'},
+  {id:'p85',name:'San Mig Coffee 3-in-1 30g',cat:'coffee',brand:'sanmiguel',prices:{sm:20,gaisano:18,metrogaisano:18,puregold:16,savemore:15,'7eleven':24},upd:'2026-04-21'},
+  {id:'p86',name:'Lipton Yellow Label 100 bags',cat:'coffee',brand:'unilever',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:195,puregold:168},upd:'2026-04-21'},
+  {id:'p87',name:'San Miguel Pale Pilsen 330ml',cat:'alcohol',brand:'sanmiguel',prices:{sm:65,gaisano:58,metrogaisano:57,puregold:52,lcc:52,savemore:52,primark:52,'7eleven':78},upd:'2026-04-21'},
+  {id:'p88',name:'San Mig Light 330ml',cat:'alcohol',brand:'sanmiguel',prices:{sm:65,gaisano:58,metrogaisano:57,puregold:55,savemore:52,'7eleven':78},upd:'2026-04-21'},
+  {id:'p89',name:'San Miguel Premium All-Malt 330ml',cat:'alcohol',brand:'sanmiguel',prices:{sm:88,gaisano:82,metrogaisano:80,puregold:78,'7eleven':98},upd:'2026-04-21'},
+  {id:'p90',name:'Red Horse Beer 500ml',cat:'alcohol',brand:'sanmiguel',prices:{sm:78,gaisano:72,metrogaisano:70,puregold:65,savemore:62,'7eleven':92},upd:'2026-04-21'},
+  {id:'p91',name:'Beer na Beer 330ml',cat:'alcohol',brand:'asia',prices:{sm:45,gaisano:42,metrogaisano:41,puregold:38,lcc:38,savemore:36,'7eleven':55},upd:'2026-04-21'},
+  {id:'p92',name:'Colt 45 330ml',cat:'alcohol',brand:'asia',prices:{sm:58,gaisano:55,metrogaisano:54,puregold:50,'7eleven':68},upd:'2026-04-21'},
+  {id:'p93',name:'Tanduay Rum 350ml',cat:'alcohol',brand:'sanmiguel',prices:{sm:88,gaisano:82,metrogaisano:81,puregold:78,'7eleven':98},upd:'2026-04-21'},
+  {id:'p94',name:'Ginebra San Miguel 350ml',cat:'alcohol',brand:'ginebra',prices:{sm:95,gaisano:88,metrogaisano:87,puregold:82,'7eleven':108},upd:'2026-04-21'},
+  {id:'p95',name:'GSM Blue Flavored Gin 350ml',cat:'alcohol',brand:'ginebra',prices:{sm:85,gaisano:78,metrogaisano:77,puregold:72,'7eleven':95},upd:'2026-04-21'},
+  {id:'p96',name:'Vino Kulafu 350ml',cat:'alcohol',brand:'ginebra',prices:{sm:68,gaisano:62,metrogaisano:61,puregold:58,'7eleven':78},upd:'2026-04-21'},
+  {id:'p97',name:'Smirnoff Mule 330ml',cat:'alcohol',brand:'',prices:{sm:98,gaisano:95,metrogaisano:93,robinsons:108,'7eleven':115},upd:'2026-04-21'},
+  {id:'p98',name:'Century Tuna 155g',cat:'canned',brand:'sanmiguel',prices:{sm:58,gaisano:52,metrogaisano:51,robinsons:65,puregold:48,lcc:46,savemore:46,primark:46,'7eleven':68},upd:'2026-04-21',dti:55},
+  {id:'p99',name:'Argentina Corned Beef 260g',cat:'canned',brand:'urc',prices:{sm:115,gaisano:108,metrogaisano:107,robinsons:128,puregold:105,savemore:102,primark:102,'7eleven':132},upd:'2026-04-21',dti:110},
+  {id:'p100',name:'Spam Classic 340g',cat:'canned',brand:'urc',prices:{sm:168,gaisano:158,metrogaisano:156,robinsons:175,puregold:152},upd:'2026-04-21'},
+  {id:'p101',name:'Lucky Me Instant Noodles 65g',cat:'canned',brand:'urc',prices:{sm:18,gaisano:16,metrogaisano:16,robinsons:22,puregold:14,lcc:14,savemore:14,primark:14,'7eleven':22},upd:'2026-04-21',dti:17},
+  {id:'p102',name:'Del Monte Tomato Sauce 250ml',cat:'canned',brand:'delmonte',prices:{sm:38,gaisano:32,metrogaisano:31,puregold:28,lcc:26,savemore:26,primark:26},upd:'2026-04-21'},
+  {id:'p103',name:'Del Monte Fruit Cocktail 432g',cat:'canned',brand:'delmonte',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:78,savemore:75},upd:'2026-04-21'},
+  {id:'p104',name:'Del Monte Pineapple Chunks 432g',cat:'canned',brand:'delmonte',prices:{sm:85,gaisano:78,metrogaisano:77,robinsons:92,puregold:75,savemore:72},upd:'2026-04-21'},
+  {id:'p105',name:'Del Monte Pineapple Juice 240ml',cat:'canned',brand:'delmonte',prices:{sm:32,gaisano:28,metrogaisano:28,robinsons:36,puregold:26,'7eleven':38},upd:'2026-04-21'},
+  {id:'p106',name:'Dole Pineapple Juice 1L',cat:'canned',brand:'dole',prices:{sm:68,gaisano:62,metrogaisano:61,robinsons:75,puregold:58,savemore:55},upd:'2026-04-21'},
+  {id:'p107',name:'Dole Pineapple Chunks 432g',cat:'canned',brand:'dole',prices:{sm:85,gaisano:78,metrogaisano:77,robinsons:92,puregold:75,savemore:72},upd:'2026-04-21'},
+  {id:'p108',name:'Dole Tropical Fruit Cocktail 432g',cat:'canned',brand:'dole',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:78,savemore:75},upd:'2026-04-21'},
+  {id:'p109',name:'Minola Cooking Oil 1L',cat:'pantry',brand:'urc',prices:{sm:95,gaisano:88,metrogaisano:87,robinsons:98,puregold:83,savemore:82,primark:82},upd:'2026-04-21',dti:90},
+  {id:'p110',name:'Sinandomeng Rice 5kg',cat:'pantry',brand:'',prices:{sm:295,gaisano:278,metrogaisano:275,robinsons:305,puregold:268,savemore:265,primark:265},upd:'2026-04-21',dti:285},
+  {id:'p111',name:"Mama Sita's Sinigang Mix 20g",cat:'pantry',brand:'',prices:{sm:18,gaisano:16,metrogaisano:16,puregold:14,savemore:14,primark:14,'7eleven':20},upd:'2026-04-21'},
+  {id:'p112',name:'Del Monte Spaghetti Sauce 250g',cat:'pantry',brand:'delmonte',prices:{sm:48,gaisano:42,metrogaisano:41,puregold:38,savemore:36,primark:36},upd:'2026-04-21'},
+  {id:'p113',name:'Del Monte Pasta 400g',cat:'pantry',brand:'delmonte',prices:{sm:55,gaisano:48,metrogaisano:47,puregold:45,savemore:42,primark:42},upd:'2026-04-21'},
+  {id:'p114',name:'Maggi Oyster Sauce 250ml',cat:'pantry',brand:'nestle',prices:{sm:55,gaisano:50,metrogaisano:49,puregold:46,savemore:44,primark:44},upd:'2026-04-21'},
+  {id:'p115',name:'Maggi Seasoning Sauce 60ml',cat:'pantry',brand:'nestle',prices:{sm:32,gaisano:28,metrogaisano:27,puregold:25,savemore:24,primark:24},upd:'2026-04-21'},
+  {id:'p116',name:'UFC Banana Ketchup 320g',cat:'condiments',brand:'nutriasia',prices:{sm:55,gaisano:50,metrogaisano:49,robinsons:60,puregold:45,savemore:43,primark:43},upd:'2026-04-21'},
+  {id:'p117',name:'UFC Tomato Ketchup 320g',cat:'condiments',brand:'nutriasia',prices:{sm:58,gaisano:52,metrogaisano:51,robinsons:65,puregold:48,savemore:46,primark:46},upd:'2026-04-21'},
+  {id:'p118',name:'Jufran Banana Ketchup 320g',cat:'condiments',brand:'nutriasia',prices:{sm:52,gaisano:48,metrogaisano:47,puregold:42,savemore:40,primark:40},upd:'2026-04-21'},
+  {id:'p119',name:'Mang Tomas Lechon Sauce 550g',cat:'condiments',brand:'nutriasia',prices:{sm:68,gaisano:62,metrogaisano:61,puregold:58,savemore:55,primark:55},upd:'2026-04-21'},
+  {id:'p120',name:'Silver Swan Soy Sauce 1L',cat:'condiments',brand:'nutriasia',prices:{sm:55,gaisano:50,metrogaisano:49,puregold:45,savemore:42,primark:42},upd:'2026-04-21'},
+  {id:'p121',name:'Datu Puti Soy Sauce 1L',cat:'condiments',brand:'nutriasia',prices:{sm:52,gaisano:48,metrogaisano:47,puregold:42,savemore:40,primark:40,lcc:38},upd:'2026-04-21'},
+  {id:'p122',name:'Datu Puti Vinegar 1L',cat:'condiments',brand:'nutriasia',prices:{sm:48,gaisano:42,metrogaisano:41,puregold:38,savemore:36,primark:36,lcc:35},upd:'2026-04-21'},
+  {id:'p123',name:'Knorr Liquid Seasoning 130ml',cat:'condiments',brand:'unilever',prices:{sm:55,gaisano:50,metrogaisano:49,puregold:46,savemore:44,primark:44},upd:'2026-04-21'},
+  {id:'p124',name:'Knorr Sinigang Mix 22g',cat:'condiments',brand:'unilever',prices:{sm:18,gaisano:16,metrogaisano:16,puregold:14,savemore:13,primark:13},upd:'2026-04-21'},
+  {id:'p125',name:'White King Flour 1kg',cat:'baking',brand:'urc',prices:{sm:58,gaisano:52,metrogaisano:51,robinsons:62,puregold:48,savemore:45,primark:45},upd:'2026-04-21'},
+  {id:'p126',name:'Pure Cane Sugar 1kg',cat:'baking',brand:'',prices:{sm:75,gaisano:68,metrogaisano:67,puregold:62,lcc:62,savemore:62,primark:62},upd:'2026-04-21',dti:70},
+  {id:'p127',name:'Anchor Butter 250g',cat:'baking',brand:'',prices:{sm:228,gaisano:218,metrogaisano:215,robinsons:235,puregold:210},upd:'2026-04-21'},
+  {id:'p128',name:'Baking Powder 50g',cat:'baking',brand:'',prices:{sm:28,gaisano:25,metrogaisano:24,puregold:22,savemore:20,primark:20},upd:'2026-04-21'},
+  {id:'p129',name:'Colgate Regular Toothpaste 150g',cat:'personalcare',brand:'urc',prices:{sm:95,gaisano:88,metrogaisano:87,robinsons:108,puregold:83,savemore:82,primark:82,'7eleven':108},upd:'2026-04-21'},
+  {id:'p130',name:'Closeup Toothpaste 150g',cat:'personalcare',brand:'unilever',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:78,savemore:75,primark:75},upd:'2026-04-21'},
+  {id:'p131',name:'Safeguard Bar Soap 135g',cat:'personalcare',brand:'pg',prices:{sm:52,gaisano:45,metrogaisano:44,robinsons:62,puregold:42,savemore:40,primark:40,'7eleven':62},upd:'2026-04-21'},
+  {id:'p132',name:'Dove Bar Soap 135g',cat:'personalcare',brand:'unilever',prices:{sm:58,gaisano:52,metrogaisano:51,robinsons:65,puregold:48,savemore:46,primark:46},upd:'2026-04-21'},
+  {id:'p133',name:'Lifebuoy Bar Soap 135g',cat:'personalcare',brand:'unilever',prices:{sm:42,gaisano:38,metrogaisano:37,puregold:35,savemore:32,primark:32,'7eleven':48},upd:'2026-04-21'},
+  {id:'p134',name:'Head & Shoulders Shampoo 170ml',cat:'personalcare',brand:'pg',prices:{sm:192,gaisano:182,metrogaisano:180,robinsons:198,puregold:175},upd:'2026-04-21'},
+  {id:'p135',name:'Pantene Shampoo 200ml',cat:'personalcare',brand:'pg',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:195,puregold:172,savemore:168},upd:'2026-04-21'},
+  {id:'p136',name:'Palmolive Shampoo 200ml',cat:'personalcare',brand:'urc',prices:{sm:108,gaisano:98,metrogaisano:97,robinsons:115,puregold:92,savemore:90,primark:90},upd:'2026-04-21'},
+  {id:'p137',name:'Dove Shampoo 200ml',cat:'personalcare',brand:'unilever',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:195,puregold:172,savemore:168},upd:'2026-04-21'},
+  {id:'p138',name:'Sunsilk Shampoo 200ml',cat:'personalcare',brand:'unilever',prices:{sm:108,gaisano:98,metrogaisano:97,robinsons:115,puregold:92,savemore:90,primark:90},upd:'2026-04-21'},
+  {id:'p139',name:'TRESemmé Shampoo 340ml',cat:'personalcare',brand:'unilever',prices:{sm:228,gaisano:218,metrogaisano:215,robinsons:238,puregold:210},upd:'2026-04-21'},
+  {id:'p140',name:'Vaseline Body Lotion 200ml',cat:'personalcare',brand:'unilever',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:198,puregold:172},upd:'2026-04-21'},
+  {id:'p141',name:"Pond's Cold Cream 50g",cat:'personalcare',brand:'unilever',prices:{sm:75,gaisano:68,metrogaisano:67,robinsons:82,puregold:64},upd:'2026-04-21'},
+  {id:'p142',name:'Vicks VapoRub 25g',cat:'personalcare',brand:'pg',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:78,'7eleven':98},upd:'2026-04-21'},
+  {id:'p143',name:"Pond's BB Cream 18g",cat:'beauty',brand:'unilever',prices:{sm:148,gaisano:138,metrogaisano:136,robinsons:158,puregold:130},upd:'2026-04-21'},
+  {id:'p144',name:'Maybelline Fit Me Foundation 30ml',cat:'beauty',brand:'',prices:{sm:388,gaisano:375,metrogaisano:372,robinsons:398,puregold:365},upd:'2026-04-21'},
+  {id:'p145',name:'Nivea Body Lotion 200ml',cat:'beauty',brand:'',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:198,puregold:172},upd:'2026-04-21'},
+  {id:'p146',name:'Olay Total Effects 50g',cat:'beauty',brand:'pg',prices:{sm:388,gaisano:375,metrogaisano:372,robinsons:398,puregold:365},upd:'2026-04-21'},
+  {id:'p147',name:'Gillette Mach3 Razor',cat:'menscare',brand:'pg',prices:{sm:288,gaisano:278,metrogaisano:275,robinsons:298,puregold:268},upd:'2026-04-21'},
+  {id:'p148',name:'Old Spice Deodorant 50ml',cat:'menscare',brand:'pg',prices:{sm:152,gaisano:142,metrogaisano:140,robinsons:162,puregold:135},upd:'2026-04-21'},
+  {id:'p149',name:'Axe Body Spray 150ml',cat:'menscare',brand:'unilever',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:198,puregold:172},upd:'2026-04-21'},
+  {id:'p150',name:'Rexona Deodorant Roll-On 50ml',cat:'menscare',brand:'unilever',prices:{sm:118,gaisano:108,metrogaisano:107,robinsons:128,puregold:102},upd:'2026-04-21'},
+  {id:'p151',name:'Brylcreem Hair Cream 150g',cat:'menscare',brand:'',prices:{sm:128,gaisano:118,metrogaisano:116,robinsons:138,puregold:112},upd:'2026-04-21'},
+  {id:'p152',name:'Pampers Newborn Diapers 20s',cat:'baby',brand:'pg',prices:{sm:295,gaisano:285,metrogaisano:282,robinsons:308,puregold:275},upd:'2026-04-21'},
+  {id:'p153',name:"Johnson's Baby Shampoo 200ml",cat:'baby',brand:'',prices:{sm:178,gaisano:168,metrogaisano:166,robinsons:188,puregold:160},upd:'2026-04-21'},
+  {id:'p154',name:'Nestlé NAN 1 Formula 400g',cat:'baby',brand:'nestle',prices:{sm:692,gaisano:678,metrogaisano:675,robinsons:712,puregold:665},upd:'2026-04-21'},
+  {id:'p155',name:'Cerelac Rice 240g',cat:'baby',brand:'nestle',prices:{sm:185,gaisano:175,metrogaisano:173,robinsons:195,puregold:168},upd:'2026-04-21'},
+  {id:'p156',name:'Biogesic 500mg 10 tabs',cat:'pharmacy',brand:'',prices:{sm:32,gaisano:30,metrogaisano:30,puregold:28,savemore:27,primark:27,'7eleven':38},upd:'2026-04-21',dti:32},
+  {id:'p157',name:'Alaxan FR 10 tabs',cat:'pharmacy',brand:'',prices:{sm:68,gaisano:65,metrogaisano:64,puregold:62,'7eleven':78},upd:'2026-04-21',dti:68},
+  {id:'p158',name:'Neozep Forte 10 tabs',cat:'pharmacy',brand:'',prices:{sm:78,gaisano:72,metrogaisano:71,puregold:68,'7eleven':88},upd:'2026-04-21',dti:75},
+  {id:'p159',name:'Kremil-S 10 tabs',cat:'pharmacy',brand:'',prices:{sm:58,gaisano:52,metrogaisano:51,puregold:48,'7eleven':65},upd:'2026-04-21'},
+  {id:'p160',name:'Betadine Solution 60ml',cat:'pharmacy',brand:'',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:78},upd:'2026-04-21'},
+  {id:'p161',name:'Ceelin Plus Vitamin C 120ml',cat:'health',brand:'',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:198,puregold:170},upd:'2026-04-21'},
+  {id:'p162',name:'Bounty Plus Vitamin C 500mg 30s',cat:'health',brand:'bounty',prices:{sm:148,gaisano:138,metrogaisano:136,robinsons:158,puregold:132},upd:'2026-04-21'},
+  {id:'p163',name:'Ensure Powder 400g',cat:'health',brand:'',prices:{sm:692,gaisano:678,metrogaisano:675,robinsons:708,puregold:665},upd:'2026-04-21'},
+  {id:'p164',name:'Stresstabs 30 tabs',cat:'health',brand:'',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:198,puregold:170},upd:'2026-04-21'},
+  {id:'p165',name:'Pedigree Dog Food 1.5kg',cat:'pets',brand:'',prices:{sm:292,gaisano:278,metrogaisano:275,robinsons:305,puregold:268},upd:'2026-04-21'},
+  {id:'p166',name:'Whiskas Cat Food 1.2kg',cat:'pets',brand:'',prices:{sm:268,gaisano:258,metrogaisano:255,robinsons:282,puregold:248},upd:'2026-04-21'},
+  {id:'p167',name:'Alpo Dry Dog Food 1kg',cat:'pets',brand:'',prices:{sm:172,gaisano:162,metrogaisano:160,robinsons:182,puregold:155},upd:'2026-04-21'},
+  {id:'p168',name:'Glad Trash Bags Large 10s',cat:'household',brand:'',prices:{sm:88,gaisano:82,metrogaisano:80,puregold:75,lcc:75,savemore:75,primark:75},upd:'2026-04-21'},
+  {id:'p169',name:'Scotch-Brite Sponge 3s',cat:'household',brand:'',prices:{sm:72,gaisano:65,metrogaisano:64,puregold:60,savemore:58,primark:58},upd:'2026-04-21'},
+  {id:'p170',name:'Reynolds Aluminum Foil 30ft',cat:'household',brand:'',prices:{sm:128,gaisano:118,metrogaisano:116,robinsons:138,puregold:112},upd:'2026-04-21'},
+  {id:'p171',name:'Ariel Powder 1kg',cat:'laundry',brand:'pg',prices:{sm:168,gaisano:158,metrogaisano:156,robinsons:175,puregold:150,savemore:148,primark:148},upd:'2026-04-21',dti:162},
+  {id:'p172',name:'Tide Powder 1kg',cat:'laundry',brand:'pg',prices:{sm:152,gaisano:142,metrogaisano:140,robinsons:158,puregold:135,savemore:132,primark:132},upd:'2026-04-21',dti:148},
+  {id:'p173',name:'Surf Powder 1kg',cat:'laundry',brand:'unilever',prices:{sm:135,gaisano:128,metrogaisano:126,puregold:118,lcc:115,savemore:115,primark:115},upd:'2026-04-21'},
+  {id:'p174',name:'Downy Fabric Conditioner 1L',cat:'laundry',brand:'pg',prices:{sm:192,gaisano:182,metrogaisano:180,robinsons:198,puregold:175,savemore:172,primark:172},upd:'2026-04-21'},
+  {id:'p175',name:'Comfort Fabric Conditioner 1L',cat:'laundry',brand:'unilever',prices:{sm:178,gaisano:168,metrogaisano:166,robinsons:188,puregold:162,savemore:158,primark:158},upd:'2026-04-21'},
+  {id:'p176',name:'Marlboro Red 20s',cat:'tobacco',brand:'',prices:{sm:188,gaisano:185,metrogaisano:184,puregold:182,'7eleven':198},upd:'2026-04-21'},
+  {id:'p177',name:'Philip Morris 20s',cat:'tobacco',brand:'',prices:{sm:178,gaisano:175,metrogaisano:174,puregold:172,'7eleven':188},upd:'2026-04-21'},
+  {id:'p178',name:'Winston Blue 20s',cat:'tobacco',brand:'',prices:{sm:168,gaisano:165,metrogaisano:164,puregold:162,'7eleven':178},upd:'2026-04-21'},
+  {id:'p179',name:'Camel 20s',cat:'tobacco',brand:'',prices:{sm:175,gaisano:172,metrogaisano:170,puregold:168,'7eleven':185},upd:'2026-04-21'},
+  {id:'p180',name:'USB-C Cable 1m',cat:'electronics',brand:'',prices:{sm:188,gaisano:178,metrogaisano:176,robinsons:198,puregold:165},upd:'2026-04-21'},
+  {id:'p181',name:'Earphones Type-C (generic)',cat:'electronics',brand:'',prices:{sm:288,gaisano:278,metrogaisano:275,robinsons:298,puregold:260},upd:'2026-04-21'},
+  {id:'p182',name:'Globe Load Card ₱100',cat:'electronics',brand:'',prices:{sm:100,gaisano:100,metrogaisano:100,puregold:100,savemore:100,primark:100,'7eleven':100},upd:'2026-04-21'},
+  {id:'p183',name:'TNT Load Card ₱100',cat:'electronics',brand:'',prices:{sm:100,gaisano:100,metrogaisano:100,puregold:100,'7eleven':100},upd:'2026-04-21'},
+  {id:'p184',name:'Mongol Pencil 12s',cat:'books',brand:'',prices:{sm:72,gaisano:65,metrogaisano:64,robinsons:78,puregold:60},upd:'2026-04-21'},
+  {id:'p185',name:'Zebra Ballpen 0.5 Blue',cat:'books',brand:'',prices:{sm:48,gaisano:42,metrogaisano:41,robinsons:52,puregold:38},upd:'2026-04-21'},
+  {id:'p186',name:'Composition Notebook 80 leaves',cat:'books',brand:'',prices:{sm:88,gaisano:82,metrogaisano:80,robinsons:95,puregold:75,lcc:75},upd:'2026-04-21'},
+  {id:'p187',name:'Scotch Tape 1 inch',cat:'books',brand:'',prices:{sm:30,gaisano:25,metrogaisano:24,robinsons:35,puregold:22,savemore:20,primark:20},upd:'2026-04-21'},
+  {id:'p188',name:'Birthday Candles 24s',cat:'party',brand:'',prices:{sm:48,gaisano:42,metrogaisano:41,robinsons:55,puregold:38,savemore:36,primark:36},upd:'2026-04-21'},
+  {id:'p189',name:'Paper Plates 25s',cat:'party',brand:'',prices:{sm:88,gaisano:82,metrogaisano:80,puregold:75,savemore:75,primark:75},upd:'2026-04-21'},
+  {id:'p190',name:'Confetti Poppers 6s',cat:'party',brand:'',prices:{sm:128,gaisano:118,metrogaisano:116,robinsons:138,puregold:112},upd:'2026-04-21'},
+  {id:'p191',name:'Loot Bag Set 10s',cat:'party',brand:'',prices:{sm:148,gaisano:138,metrogaisano:136,robinsons:158,puregold:130},upd:'2026-04-21'},
+];
+
+// ════════════════════════════════
+// STATE
+// ════════════════════════════════
+let reports=[], priceOverrides={}, cart=[], alerts=[], browseTab='cats', selStore=null, curModal=null, lastUpd='Apr 21, 2026', toolTab='calc';
+try{reports=JSON.parse(localStorage.getItem('tp_r')||'[]');}catch(e){}
+try{priceOverrides=JSON.parse(localStorage.getItem('tp_ov')||'{}');}catch(e){}
+try{cart=JSON.parse(localStorage.getItem('tp_cart')||'[]');}catch(e){}
+try{alerts=JSON.parse(localStorage.getItem('tp_al')||'[]');}catch(e){}
+try{lastUpd=localStorage.getItem('tp_lupd')||'Apr 21, 2026';}catch(e){}
+
+function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
+
+// ════════════════════════════════
+// HELPERS
+// ════════════════════════════════
+function allProds(){
+  const m=P.map(p=>({...p,prices:{...p.prices,...(priceOverrides[p.id]||{})}}));
+  reports.forEach(r=>{
+    const ex=m.find(p=>p.name.toLowerCase()===r.prod.toLowerCase()&&p.cat===r.cat);
+    if(ex){ex.prices[r.store+'_c']=r.price;ex.hasReport=true;ex.upd=r.date;}
+    else m.push({id:'cr'+r.id,name:r.prod,cat:r.cat,brand:'',prices:{[r.store+'_c']:r.price},upd:r.date,isCommunity:true});
+  });return m;
+}
+function sname(id){
+  if(id.endsWith('_c')){const s=STORES.find(x=>x.id===id.replace('_c',''));return(s?s.name:'?')+' 📢';}
+  return STORES.find(x=>x.id===id)?.name||id;
+}
+function lowestK(prices){let mn=Infinity,mk='';for(const[k,v]of Object.entries(prices))if(v<mn){mn=v;mk=k;}return mk;}
+function catObj(id){return CATS.find(c=>c.id===id);}
+function brandObj(id){return BRANDS.find(b=>b.id===id);}
+function fmtPrice(n){return'₱'+n.toLocaleString();}
+
+// ════════════════════════════════
+// NAV
+// ════════════════════════════════
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelector(`[data-page="${p}"]`)?.classList.add('active');
+  document.getElementById('content').scrollTop=0;
+  if(p==='categories'){document.getElementById('cat-detail').style.display='none';showBrowseTab(browseTab);}
+  if(p==='tools')showTool(toolTab);
+}
+
+// ════════════════════════════════
+// HOME
+// ════════════════════════════════
+function renderHome(){
+  document.getElementById('lupd').textContent='Updated '+lastUpd;
+  const prods=allProds();
+  // Best prices
+  const deals=prods.slice(0,50).map(p=>({...p,lp:Math.min(...Object.values(p.prices)),lk:lowestK(p.prices)}))
+    .sort((a,b)=>a.lp-b.lp).slice(0,10);
+  document.getElementById('best-prices').innerHTML=deals.map(p=>`
+    <div class="pcard" onclick="showModal('${p.id}')">
+      <div class="bbadge">🏷 BEST PRICE</div>
+      <div class="pn">${p.name}</div><div class="ps">${sname(p.lk)}</div>
+      <div class="pp">${fmtPrice(p.lp)}</div><div class="pd">${p.upd}</div>
+    </div>`).join('');
+  // Stores
+  document.getElementById('home-stores').innerHTML=STORES.slice(0,6).map(s=>`
+    <div class="scard" onclick="goStore('${s.id}')">
+      <div class="se">${s.icon}</div><div class="sn">${s.name}</div>
+      <div class="st">${s.type}</div><div class="sbadge">View Prices →</div>
+    </div>`).join('');
+  // Community reports
+  const rc=document.getElementById('recent-reports');
+  if(!reports.length){rc.innerHTML='<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">No reports yet. Be the first! 📢</div>';return;}
+  rc.innerHTML=[...reports].reverse().slice(0,3).map(r=>{
+    const st=STORES.find(s=>s.id===r.store);const c=catObj(r.cat);
+    return`<div class="pitem"><div class="piname">${r.prod}<span class="ctag">📢</span></div>
+      <div class="piprices"><div class="ptag low"><div class="pts">${st?.name||r.store}</div><div class="ptv">₱${r.price}</div></div></div>
+      <div class="pupd">By ${r.reporter||'Anonymous'} · ${r.date}</div></div>`;
+  }).join('');
+}
+
+function checkAlertBanner(){
+  const triggered=alerts.filter(a=>a.triggered&&!a.dismissed);
+  const banner=document.getElementById('abanner');
+  const badge=document.getElementById('alert-badge');
+  if(!triggered.length){banner.style.display='none';badge.classList.remove('show');return;}
+  banner.style.display='block';
+  badge.textContent=triggered.length;badge.classList.add('show');
+  document.getElementById('abanner-items').innerHTML=triggered.map(a=>`
+    <div class="abanner-item">
+      <span>🔔 ${a.productName} — target ₱${a.targetPrice}</span>
+      <span style="color:var(--accent);font-weight:700">₱${a.triggeredPrice} @ ${sname(a.triggeredStore)}</span>
+    </div>`).join('');
+}
+
+function dismissAlerts(){
+  alerts.forEach(a=>{if(a.triggered)a.dismissed=true;});
+  save('tp_al',alerts);
+  document.getElementById('abanner').style.display='none';
+  document.getElementById('alert-badge').classList.remove('show');
+}
+
+// ════════════════════════════════
+// STORES
+// ════════════════════════════════
+function renderAllStores(){
+  document.getElementById('all-stores').innerHTML=STORES.map(s=>`
+    <div class="scard${selStore===s.id?' active':''}" onclick="selectStore('${s.id}')">
+      <div class="se">${s.icon}</div><div class="sn">${s.name}</div><div class="st">${s.type}</div>
+    </div>`).join('');
+}
+function selectStore(sid){
+  selStore=sid;renderAllStores();
+  const store=STORES.find(s=>s.id===sid);
+  const prods=allProds().filter(p=>Object.keys(p.prices).some(k=>k===sid||k===sid+'_c'));
+  const det=document.getElementById('store-detail');det.style.display='block';
+  document.getElementById('store-dtitle').innerHTML=`${store.icon} ${store.name} <span style="font-size:10px;color:var(--text2);font-weight:400">${prods.length} items</span>`;
+  const cats=[...new Set(prods.map(p=>p.cat))];let ac='all';
+  function rc(){
+    document.getElementById('store-chips').innerHTML=`<div class="chip${ac==='all'?' active':''}" onclick="fsc('all')">All</div>`+
+      cats.map(cid=>{const c=catObj(cid);return`<div class="chip${ac===cid?' active':''}" onclick="fsc('${cid}')">${c?c.icon+' '+c.name:cid}</div>`;}).join('');
+  }
+  window.fsc=function(cid){ac=cid;rc();renderPList(cid==='all'?prods:prods.filter(p=>p.cat===cid),document.getElementById('store-plist'),sid);};
+  rc();renderPList(prods,document.getElementById('store-plist'),sid);
+  setTimeout(()=>det.scrollIntoView({behavior:'smooth'}),80);
+}
+function goStore(sid){switchPage('stores');setTimeout(()=>selectStore(sid),60);}
+
+function renderPList(prods,el,hl){
+  if(!prods.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No products found</div>';return;}
+  el.innerHTML=prods.map(p=>{
+    const c=catObj(p.cat);const lk=lowestK(p.prices);const b=brandObj(p.brand);
+    const tags=Object.entries(p.prices).map(([sid,price])=>`
+      <div class="ptag${sid===lk?' low':''}">
+        <div class="pts">${sname(sid)}</div><div class="ptv">₱${price}</div>
+      </div>`).join('');
+    return`<div class="pitem" onclick="showModal('${p.id}')">
+      <div class="piname">${p.name}${p.hasReport||p.isCommunity?'<span class="ctag">📢</span>':''}${b?`<span class="brandtag">${b.icon}</span>`:''}</div>
+      <div class="piprices">${tags}</div>
+      <div class="pupd">${c?c.icon+' '+c.name:''} · ${p.upd}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════
+// BROWSE
+// ════════════════════════════════
+function showBrowseTab(t){
+  browseTab=t;
+  ['cats','brands'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+    document.getElementById(x==='cats'?'cat-grid-wrap':'brand-grid-wrap').style.display=x===t?'block':'none';
+  });
+  document.getElementById('cat-detail').style.display='none';
+}
+function renderCats(){
+  document.getElementById('cat-grid').innerHTML=CATS.map(c=>`
+    <div class="ccard" onclick="selCat('${c.id}')"><div class="ci">${c.icon}</div><div class="cn">${c.name}</div></div>`).join('');
+}
+function renderBrands(){
+  const prods=allProds();
+  document.getElementById('brand-grid').innerHTML=BRANDS.map(b=>{
+    const cnt=prods.filter(p=>p.brand===b.id).length;
+    return`<div class="bcard" onclick="selBrand('${b.id}')"><div class="bico">${b.icon}</div><div><div class="bname">${b.name}</div><div class="bsub">${cnt} products</div></div></div>`;
+  }).join('');
+}
+function selCat(cid){
+  const c=catObj(cid);
+  document.getElementById('cat-grid-wrap').style.display='none';
+  document.getElementById('brand-grid-wrap').style.display='none';
+  document.getElementById('cat-detail').style.display='block';
+  document.getElementById('cat-dtitle').textContent=c?c.icon+' '+c.name:'';
+  renderPList(allProds().filter(p=>p.cat===cid),document.getElementById('cat-plist'),null);
+}
+function selBrand(bid){
+  const b=brandObj(bid);
+  document.getElementById('cat-grid-wrap').style.display='none';
+  document.getElementById('brand-grid-wrap').style.display='none';
+  document.getElementById('cat-detail').style.display='block';
+  document.getElementById('cat-dtitle').textContent=b?b.icon+' '+b.name:'';
+  renderPList(allProds().filter(p=>p.brand===bid),document.getElementById('cat-plist'),null);
+}
+function closeCatDetail(){document.getElementById('cat-detail').style.display='none';showBrowseTab(browseTab);}
+
+// ════════════════════════════════
+// SEARCH
+// ════════════════════════════════
+function doSearch(q){
+  const el=document.getElementById('sres');
+  if(!q.trim()){el.innerHTML='<div class="nores"><div class="noico">🔍</div><div style="font-weight:600">Search across 10 stores</div><div style="font-size:11px;color:var(--text3);margin-top:5px">Try "Coca-Cola", "Ariel", "Century Tuna"</div></div>';return;}
+  const ql=q.toLowerCase();
+  const res=allProds().filter(p=>p.name.toLowerCase().includes(ql)||(catObj(p.cat)?.name.toLowerCase().includes(ql))||(brandObj(p.brand)?.name.toLowerCase().includes(ql)));
+  if(!res.length){el.innerHTML=`<div class="nores"><div class="noico">😕</div><div>No results for "${q}"</div></div>`;return;}
+  const wrap=document.createElement('div');wrap.className='plist';
+  renderPList(res,wrap,null);
+  el.innerHTML=`<div style="font-size:12px;color:var(--text2);margin-bottom:9px">${res.length} result${res.length>1?'s':''} for "<b>${q}</b>"</div>`;
+  el.appendChild(wrap);
+}
+
+// ════════════════════════════════
+// MODAL
+// ════════════════════════════════
+function showModal(pid){
+  const prods=allProds();const p=prods.find(x=>x.id===pid);if(!p)return;
+  curModal=p;
+  const c=catObj(p.cat);const lk=lowestK(p.prices);const b=brandObj(p.brand);
+  document.getElementById('m-prod').textContent=p.name;
+  document.getElementById('m-cat').innerHTML=(c?c.icon+' '+c.name:'')+(b?` <span class="brandtag">${b.icon} ${b.name}</span>`:'')+
+    (p.dti?` <span class="dtibg">📋 DTI ₱${p.dti}</span>`:'');
+  document.getElementById('m-prices').innerHTML=Object.entries(p.prices).map(([sid,price])=>{
+    const isBest=sid===lk;const isCom=sid.endsWith('_c');
+    return`<div class="mpr${isBest?' best':''}">
+      <div><div class="mprs">${sname(sid)}${isCom?'<span class="ctag">📢</span>':''}</div>${isBest?'<span class="mprbg">✓ LOWEST</span>':''}</div>
+      <div class="mprp">₱${price}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('m-upd').textContent='Last updated: '+p.upd;
+  const inCart=cart.find(c=>c.id===pid);
+  document.getElementById('m-cart-btn').textContent=inCart?'✓ In List':'➕ Add to List';
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(e){if(!e||e.target===document.getElementById('modal')){document.getElementById('modal').classList.remove('open');curModal=null;}}
+function addToCartFromModal(){if(curModal)addToCart(curModal.id);document.getElementById('modal').classList.remove('open');}
+function setAlertFromModal(){if(curModal){switchPage('tools');showTool('alerts');setTimeout(()=>document.getElementById('al-prod').value=curModal.name,100);}document.getElementById('modal').classList.remove('open');}
+
+// ════════════════════════════════
+// TOOLS PAGE
+// ════════════════════════════════
+function showTool(t){
+  toolTab=t;
+  ['calc','alerts','report'].forEach(x=>{
+    document.getElementById('ttab-'+x).classList.toggle('active',x===t);
+    document.getElementById('tool-'+x).style.display=x===t?'block':'none';
+  });
+}
+
+// ── SAVINGS CALCULATOR ──
+function calcSearch(q){
+  const dd=document.getElementById('cdd');
+  if(!q.trim()){dd.style.display='none';return;}
+  const res=allProds().filter(p=>p.name.toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  if(!res.length){dd.style.display='none';return;}
+  dd.style.display='block';
+  dd.innerHTML=res.map(p=>{
+    const lp=Math.min(...Object.values(p.prices));
+    const inCart=cart.find(c=>c.id===p.id);
+    return`<div class="cdd-item" onclick="addToCart('${p.id}')">
+      <span>${p.name}</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="cdd-price">₱${lp}</span>
+        <span style="font-size:10px;color:${inCart?'var(--accent)':'var(--text3)'}">${inCart?'✓':'+'}</span>
+      </span>
+    </div>`;
+  }).join('');
+}
+function addToCart(pid){
+  const prods=allProds();const p=prods.find(x=>x.id===pid);if(!p)return;
+  if(cart.find(c=>c.id===pid)){showToast('Already in your list!');return;}
+  cart.push({id:p.id,name:p.name,cat:p.cat,prices:{...p.prices}});
+  save('tp_cart',cart);
+  document.getElementById('csearch').value='';
+  document.getElementById('cdd').style.display='none';
+  renderCart();showToast('Added ✓');
+}
+function removeFromCart(pid){cart=cart.filter(c=>c.id!==pid);save('tp_cart',cart);renderCart();}
+function clearCart(){cart=[];save('tp_cart',cart);renderCart();}
+function renderCart(){
+  const empty=document.getElementById('cempty');
+  const summary=document.getElementById('csummary');
+  const items=document.getElementById('citems');
+  if(!cart.length){empty.style.display='block';items.innerHTML='';summary.style.display='none';return;}
+  empty.style.display='none';
+  items.innerHTML=cart.map(p=>{
+    const lk=lowestK(p.prices);const lp=p.prices[lk];
+    return`<div class="cart-item">
+      <div class="ci-info">
+        <div class="ci-name">${p.name}</div>
+        <div class="ci-store">Best: ${sname(lk)}</div>
+      </div>
+      <span class="ci-price">₱${lp}</span>
+      <button class="ci-del" onclick="removeFromCart('${p.id}')">✕</button>
+    </div>`;
+  }).join('');
+  const smartTotal=cart.reduce((s,p)=>s+Math.min(...Object.values(p.prices)),0);
+  const smTotal=cart.reduce((s,p)=>s+(p.prices['sm']||Math.max(...Object.values(p.prices))),0);
+  const savings=smTotal-smartTotal;
+  document.getElementById('c-smart').textContent=fmtPrice(smartTotal);
+  document.getElementById('c-ref').textContent=fmtPrice(smTotal);
+  document.getElementById('c-sav').textContent=fmtPrice(Math.max(0,savings));
+  summary.style.display='block';
+  // Build route by store
+  const byStore={};
+  cart.forEach(p=>{
+    const lk=lowestK(p.prices);const lp=p.prices[lk];
+    if(!byStore[lk])byStore[lk]=[];
+    byStore[lk].push({name:p.name,price:lp});
+  });
+  const routeEl=document.getElementById('croute');
+  routeEl.innerHTML=Object.entries(byStore).map(([sid,items])=>{
+    const total=items.reduce((s,i)=>s+i.price,0);
+    return`<div class="route-card">
+      <div class="rc-header"><span class="rc-store">${sname(sid)}</span><span class="rc-total">${fmtPrice(total)}</span></div>
+      ${items.map(i=>`<div class="rc-item"><span>${i.name}</span><span>₱${i.price}</span></div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── PRICE ALERTS ──
+function checkAlerts(){
+  const prods=allProds();let changed=false;
+  alerts.forEach(a=>{
+    if(a.triggered||a.dismissed)return;
+    const prod=prods.find(p=>p.name.toLowerCase().includes(a.productName.toLowerCase()));
+    if(!prod)return;
+    const entries=a.storeId==='any'?Object.entries(prod.prices):[[a.storeId,prod.prices[a.storeId]]];
+    for(const[sid,price]of entries){
+      if(price!==undefined&&price<=a.targetPrice){
+        a.triggered=true;a.triggeredPrice=price;a.triggeredStore=sid;changed=true;break;
+      }
+    }
+  });
+  if(changed)save('tp_al',alerts);
+  checkAlertBanner();
+}
+function addAlert(){
+  const pn=document.getElementById('al-prod').value.trim();
+  const sid=document.getElementById('al-store').value||'any';
+  const tp=parseFloat(document.getElementById('al-price').value);
+  if(!pn||!tp||isNaN(tp)){showToast('Fill in product and target price ⚠️');return;}
+  alerts.push({id:Date.now(),productName:pn,storeId:sid,targetPrice:tp,dateSet:new Date().toISOString().split('T')[0],triggered:false,dismissed:false});
+  save('tp_al',alerts);
+  document.getElementById('al-prod').value='';document.getElementById('al-price').value='';document.getElementById('al-store').value='any';
+  checkAlerts();renderAlerts();showToast('Alert set! 🔔');
+}
+function removeAlert(id){alerts=alerts.filter(a=>a.id!==id);save('tp_al',alerts);renderAlerts();checkAlertBanner();}
+function renderAlerts(){
+  const el=document.getElementById('alertlist');
+  if(!alerts.length){el.innerHTML='<div style="text-align:center;padding:18px;color:var(--text3);font-size:12px">No alerts. Add one above!</div>';return;}
+  el.innerHTML=[...alerts].reverse().map(a=>`
+    <div class="alert-card${a.triggered&&!a.dismissed?' triggered':''}">
+      <div class="ac-top">
+        <div><div class="ac-name">${a.productName}</div>
+          <div class="ac-info">Target: ₱${a.targetPrice} · ${a.storeId==='any'?'Any store':sname(a.storeId)} · Set ${a.dateSet}</div>
+          ${a.triggered?`<div class="ac-status ok">✓ TRIGGERED — ₱${a.triggeredPrice} @ ${sname(a.triggeredStore||'')}</div>`:`<div class="ac-status wait">⏳ Watching for ₱${a.targetPrice}...</div>`}
+        </div>
+        <button class="ac-del" onclick="removeAlert(${a.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── REPORT ──
+function submitReport(){
+  const prod=document.getElementById('r-prod').value.trim();
+  const store=document.getElementById('r-store').value;
+  const catV=document.getElementById('r-cat').value;
+  const price=parseFloat(document.getElementById('r-price').value);
+  const reporter=document.getElementById('r-name').value.trim()||'Anonymous';
+  if(!prod||!store||!catV||!price||isNaN(price)){showToast('Fill in all required fields ⚠️');return;}
+  reports.push({id:Date.now(),prod,store,cat:catV,price,reporter,date:new Date().toISOString().split('T')[0]});
+  save('tp_r',reports);
+  ['r-prod','r-price','r-name'].forEach(id=>document.getElementById(id).value='');
+  ['r-store','r-cat'].forEach(id=>document.getElementById(id).value='');
+  checkAlerts();renderHome();showToast('Price reported! Thank you 🎉');
+}
+
+// ════════════════════════════════
+// LIVE PRICE REFRESH (Claude API)
+// ════════════════════════════════
+async function refreshPrices(){
+  const btn=document.getElementById('refresh-btn');
+  btn.innerHTML='<span class="spin">⏳</span> Updating…';btn.disabled=true;
+  try{
+    const sample=P.slice(0,20).map(p=>`${p.id}|${p.name}|sm:${p.prices.sm||0},gaisano:${p.prices.gaisano||0},puregold:${p.prices.puregold||0}`).join('\n');
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:`You are a Philippine grocery price database for Tacloban City, Leyte. Baseline date: April 21, 2026.
+
+Generate realistic live price adjustments reflecting current Philippine market conditions (fuel costs, peso rate, supply/demand, DTI monitoring). Apply small realistic changes (±₱1-20 depending on product type) to SOME products only. Not all need to change.
+
+Return ONLY valid JSON — no markdown, no text before or after:
+{"updates":[{"id":"PRODUCT_ID","prices":{"sm":NEW_PRICE,"gaisano":NEW_PRICE,"puregold":NEW_PRICE}}],"note":"One sentence describing market conditions today","updatedAt":"2026-04-21"}
+
+Products (id|name|current prices):
+${sample}`}]
+      })
+    });
+    const data=await resp.json();
+    const text=(data.content||[]).map(x=>x.text||'').join('');
+    const clean=text.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    if(parsed.updates&&Array.isArray(parsed.updates)){
+      parsed.updates.forEach(u=>{
+        if(!priceOverrides[u.id])priceOverrides[u.id]={};
+        Object.assign(priceOverrides[u.id],u.prices||{});
+      });
+      save('tp_ov',priceOverrides);
+      const now=new Date();
+      lastUpd=now.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});
+      try{localStorage.setItem('tp_lupd',lastUpd);}catch(e){}
+      if(parsed.note){
+        const mn=document.getElementById('mnote');
+        mn.textContent='📊 '+parsed.note;mn.style.display='block';
+        setTimeout(()=>mn.style.display='none',8000);
+      }
+      checkAlerts();renderHome();renderCart();
+      showToast(`✓ ${parsed.updates.length} prices refreshed!`);
+    }
+  }catch(err){showToast('Refresh failed. Check connection.');}
+  btn.innerHTML='🔄 Refresh Prices';btn.disabled=false;
+}
+
+// ════════════════════════════════
+// TOAST
+// ════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ════════════════════════════════
+// INIT
+// ════════════════════════════════
+function initForms(){
+  ['r-store','al-store'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML=(id==='al-store'?'<option value="any">Any store (best available)</option>':
+      '<option value="">Select store…</option>')+STORES.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  });
+  document.getElementById('r-cat').innerHTML='<option value="">Select category…</option>'+
+    CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+}
+
+document.getElementById('content').addEventListener('click',e=>{
+  if(!e.target.closest('#cdd')&&!e.target.closest('#csearch'))document.getElementById('cdd').style.display='none';
+});
+
+renderHome();renderAllStores();renderCats();renderBrands();renderCart();
+renderAlerts();checkAlerts();initForms();
+
+// Auto-refresh on load if >30min since last
+(function autoRefresh(){
+  try{
+    const t=localStorage.getItem('tp_lastcheck');
+    const now=Date.now();
+    if(!t||now-parseInt(t)>1800000){localStorage.setItem('tp_lastcheck',now);setTimeout(refreshPrices,2000);}
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
